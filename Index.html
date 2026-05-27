@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Plantão</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0e18;
+    --bg2: #111523;
+    --bg3: #161b2a;
+    --bg4: #1c2235;
+    --border: #232840;
+    --border2: #2d3555;
+    --text: #dde3f0;
+    --text2: #7a85a3;
+    --text3: #4a5270;
+    --accent: #4f7af8;
+    --accent2: #7c3aed;
+    --fm: #ef4444; --fa: #3b82f6; --fe: #8b5cf6;
+    --bh: #f59e0b; --dis: #6b7280; --pa: #ec4899;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* NAV */
+  #topbar {
+    position: sticky; top: 0; z-index: 200;
+    background: rgba(11,14,24,0.95); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 20px; height: 56px;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; margin-right: 20px; }
+  .logo-icon {
+    width: 34px; height: 34px; border-radius: 8px; font-size: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+  }
+  .logo-text { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: 1px; color: #fff; }
+  .nav-btn {
+    background: transparent; border: none; cursor: pointer; color: var(--text2);
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px;
+    letter-spacing: 1px; text-transform: uppercase; padding: 8px 14px; border-radius: 7px;
+    transition: all .2s;
+  }
+  .nav-btn:hover { background: var(--bg3); color: #fff; }
+  .nav-btn.active { background: var(--bg4); color: #fff; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .anon-badge { font-size: 12px; color: var(--text3); padding: 5px 10px; background: var(--bg3); border-radius: 6px; border: 1px solid var(--border); }
+
+  /* MAIN */
+  #app { padding: 24px 20px; max-width: 1500px; margin: 0 auto; }
+  .view { display: none; animation: fadeIn .25s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
+
+  /* CARDS */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat-card { padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
+  .stat-icon { font-size: 28px; }
+  .stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 34px; font-weight: 800; line-height: 1; }
+  .stat-label { font-size: 11px; color: var(--text2); font-weight: 600; letter-spacing: .5px; margin-top: 2px; }
+
+  /* PLANTAO TABS */
+  .ptabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+  .ptab {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px;
+    letter-spacing: .5px; padding: 9px 20px; border-radius: 8px; border: 2px solid transparent;
+    cursor: pointer; transition: all .2s;
+  }
+
+  /* SETOR */
+  .setor-block { margin-bottom: 28px; }
+  .setor-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+  }
+  .setor-label {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 14px;
+    border-radius: 6px; border-left: 3px solid;
+  }
+  .btn-add-member {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px;
+    background: var(--bg4); color: var(--accent); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 5px 12px; cursor: pointer; transition: all .15s;
+  }
+  .btn-add-member:hover { background: var(--accent); color: #fff; }
+
+  /* TABLE */
+  .tscroll { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { border-collapse: collapse; width: 100%; }
+  thead { background: var(--bg3); }
+  thead th { padding: 9px 4px; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: var(--text2); font-weight: 700; letter-spacing: .5px; text-align: center; }
+  thead th.nome-col { text-align: left; padding-left: 14px; min-width: 155px; position: sticky; left: 0; background: var(--bg3); z-index: 3; }
+  thead th.acoes-col { min-width: 78px; }
+  tbody tr { border-top: 1px solid var(--border); transition: background .1s; }
+  tbody tr:hover { background: rgba(79,122,248,.04); }
+  tbody tr:nth-child(even) { background: rgba(255,255,255,.012); }
+  tbody tr:nth-child(even):hover { background: rgba(79,122,248,.04); }
+  td.nome-td {
+    padding: 7px 14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600;
+    font-size: 13px; color: var(--text); white-space: nowrap; position: sticky; left: 0;
+    background: var(--bg2); z-index: 2;
+  }
+  td.day-td { padding: 3px 2px; text-align: center; }
+  td.acoes-td { padding: 4px 6px; text-align: center; }
+
+  .fcell {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 26px; border-radius: 4px; font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px; font-weight: 700; cursor: pointer; transition: all .15s;
+    color: var(--text3); background: transparent; letter-spacing: .3px;
+  }
+  .fcell:hover { background: var(--bg4); color: var(--text2); transform: scale(1.1); }
+  .fcell.has-folga { color: #fff; }
+  .fcell.has-folga:hover { filter: brightness(1.2); transform: scale(1.1); }
+  .fcell.fm { background: var(--fm); }
+  .fcell.fa { background: var(--fa); }
+  .fcell.fe { background: var(--fe); }
+  .fcell.bh { background: var(--bh); }
+  .fcell.dis { background: var(--dis); }
+  .fcell.pa { background: var(--pa); }
+
+  .btn-edit, .btn-del {
+    font-size: 12px; padding: 4px 7px; border-radius: 5px; border: none; cursor: pointer; transition: all .15s;
+  }
+  .btn-edit { background: var(--bg4); color: var(--accent); }
+  .btn-edit:hover { background: var(--accent); color: #fff; }
+  .btn-del { background: var(--bg4); color: #ef4444; margin-left: 3px; }
+  .btn-del:hover { background: #ef4444; color: #fff; }
+
+  /* MODAL */
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.8);
+    z-index: 500; align-items: center; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 14px;
+    padding: 28px; width: 90%; max-width: 420px;
+    animation: slideUp .2s ease;
+  }
+  @keyframes slideUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+  .modal h3 { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; color: #fff; margin-bottom: 4px; }
+  .modal-sub { color: var(--text2); font-size: 13px; margin-bottom: 20px; }
+
+  .folga-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 20px; }
+  .folga-opt {
+    border: 2px solid var(--border2); border-radius: 8px; padding: 10px 6px;
+    text-align: center; cursor: pointer; transition: all .15s;
+    font-family: 'Barlow Condensed', sans-serif; background: var(--bg3);
+  }
+  .folga-opt:hover { border-color: #fff; transform: translateY(-1px); }
+  .folga-opt.selected { border-color: #fff; }
+  .folga-opt .sigla { font-size: 16px; font-weight: 800; color: #fff; display: block; }
+  .folga-opt .desc { font-size: 10px; color: rgba(255,255,255,.65); margin-top: 2px; display: block; }
+
+  .modal-btns { display: flex; gap: 8px; }
+  .btn-primary { flex: 1; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; transition: all .15s; }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-danger { background: #ef4444; color: #fff; border: none; border-radius: 8px; padding: 12px 16px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; }
+  .btn-cancel { background: var(--bg4); color: var(--text2); border: none; border-radius: 8px; padding: 12px 16px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; }
+  .btn-cancel:hover { color: #fff; }
+
+  /* INPUT */
+  .input-field {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border2); color: var(--text);
+    border-radius: 8px; padding: 10px 14px; font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px; margin-bottom: 18px; outline: none; transition: border .2s;
+  }
+  .input-field:focus { border-color: var(--accent); }
+
+  /* TAG */
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; font-family: 'Barlow Condensed', sans-serif; }
+
+  /* LEGENDA */
+  .legenda-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 8px; }
+  .legenda-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--bg3); border-radius: 8px; border: 1px solid var(--border); }
+
+  /* BUSCA */
+  .search-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .search-bar input, .search-bar select { max-width: 260px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); border-radius: 8px; padding: 10px 14px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; outline: none; transition: border .2s; }
+  .search-bar input:focus, .search-bar select:focus { border-color: var(--accent); }
+  .search-bar select option { background: var(--bg3); }
+
+  .result-card { padding: 18px 20px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+  .result-plantao-badge { width: 42px; height: 42px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px; flex-shrink: 0; }
+  .folga-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .folga-pill { display: inline-flex; align-items: center; gap: 5px; background: var(--bg4); border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--text2); }
+
+  /* DASHBOARD CHARTS */
+  .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 18px; }
+  .chart-bar { height: 7px; border-radius: 4px; transition: width .4s ease; }
+  .plantao-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg3); border-radius: 8px; margin-bottom: 8px; }
+  .plantao-badge-sm { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 18px; flex-shrink: 0; }
+  .num-big { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 800; }
+
+  h1.page-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 30px; color: #fff; margin-bottom: 4px; }
+  .page-sub { color: var(--text2); font-size: 14px; margin-bottom: 22px; }
+
+  .empty-row td { padding: 20px; text-align: center; color: var(--text3); font-size: 13px; }
+  .btn-reset { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); border-radius: 7px; padding: 6px 14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; transition: all .15s; }
+  .btn-reset:hover { color: #ef4444; border-color: #ef4444; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div class="logo">
+    <div class="logo-icon">🛡️</div>
+    <span class="logo-text">CONTROLE DE PLANTÃO</span>
+  </div>
+  <button class="nav-btn active" onclick="showView('dashboard')">📊 Dashboard</button>
+  <button class="nav-btn" onclick="showView('escala')">📋 Escala</button>
+  <button class="nav-btn" onclick="showView('busca')">🔍 Busca</button>
+  <div class="topbar-right">
+    <span class="anon-badge">🔓 Anônimo</span>
+    <button class="btn-reset" onclick="resetData()">↺ Reset</button>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- DASHBOARD -->
+  <div id="view-dashboard" class="view active">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-sub" id="dash-sub"></p>
+    <div class="stat-grid" id="stat-grid"></div>
+    <div class="dash-grid">
+      <div class="card" style="padding:22px" id="dash-tipos"></div>
+      <div class="card" style="padding:22px" id="dash-plantoes"></div>
+      <div class="card" style="padding:22px" id="dash-legenda"></div>
+    </div>
+  </div>
+
+  <!-- ESCALA -->
+  <div id="view-escala" class="view">
+    <div class="ptabs" id="ptabs"></div>
+    <div id="escala-content"></div>
+  </div>
+
+  <!-- BUSCA -->
+  <div id="view-busca" class="view">
+    <h1 class="page-title">Busca</h1>
+    <p class="page-sub">Pesquise por nome ou filtre por tipo de folga</p>
+    <div class="search-bar">
+      <input type="text" id="busca-nome" placeholder="🔍 Nome do membro..." oninput="renderBusca()">
+      <select id="busca-tipo" onchange="renderBusca()">
+        <option value="">Todos os tipos</option>
+        <option value="FM">FM — Folga Mensal</option>
+        <option value="FA">FA — Folga Adicional</option>
+        <option value="FE">FE — Folga Especial</option>
+        <option value="BH">BH — Banco de Horas</option>
+        <option value="DIS">DIS — Dispensa</option>
+        <option value="PA">PA — Plantão Adicional</option>
+      </select>
+      <button class="btn-cancel" style="border-radius:8px;border:none;cursor:pointer;" onclick="document.getElementById('busca-nome').value='';document.getElementById('busca-tipo').value='';renderBusca()">✕ Limpar</button>
+    </div>
+    <div id="busca-results"></div>
+  </div>
+
+</div>
+
+<!-- MODAL FOLGA -->
+<div class="modal-bg" id="modal-folga">
+  <div class="modal">
+    <h3 id="mf-title">Gerenciar Folga</h3>
+    <p class="modal-sub" id="mf-sub"></p>
+    <div class="folga-grid" id="mf-grid"></div>
+    <div class="modal-btns">
+      <button class="btn-primary" onclick="salvarFolga()">✓ Salvar</button>
+      <button class="btn-danger" id="mf-del-btn" onclick="removerFolga()">🗑️</button>
+      <button class="btn-cancel" onclick="closeModal('modal-folga')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MEMBRO -->
+<div class="modal-bg" id="modal-membro">
+  <div class="modal">
+    <h3 id="mm-title">Membro</h3>
+    <p class="modal-sub" id="mm-sub"></p>
+    <input type="text" class="input-field" id="mm-nome" placeholder="Nome do membro..." onkeydown="if(event.key==='Enter')salvarMembro()">
+    <div class="modal-btns">
+      <button class="btn-primary" onclick="salvarMembro()">✓ Salvar</button>
+      <button class="btn-cancel" onclick="closeModal('modal-membro')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// BASE DE DADOS
+// ══════════════════════════════════════════════════════════════
+const INITIAL_DATA = {
+  plantoes: [
+    {
+      id:'A', nome:'Plantão "A"', horario:'06:00 às 18:00',
+      cor:'#d4a017', corTexto:'#1a1a1a',
+      setores:[
+        { nome:'Operacional', efetivo:[
+          {id:1,  nome:'INSPBARICHELLO', folgas:{14:'FM',15:'FM',18:'FM',24:'DIS',26:'FM'}},
+          {id:2,  nome:'CD MATOS',       folgas:{11:'FM',19:'FM',26:'FM'}},
+          {id:3,  nome:'CE DANILO',      folgas:{2:'FM',6:'FM',16:'BH'}},
+          {id:4,  nome:'3CL MOREIRA',    folgas:{11:'FM',19:'FM'}},
+          {id:5,  nome:'3CL VITOR',      folgas:{19:'FM',22:'DIS',24:'FM'}},
+          {id:6,  nome:'3CL MARQUES',    folgas:{9:'FA',13:'PA',27:'FM',30:'FM'}},
+          {id:7,  nome:'3CL CINTIA',     folgas:{9:'DIS',20:'FM',30:'FM'}},
+          {id:8,  nome:'3CL SUENE',      folgas:{4:'FM',15:'BH',27:'FM'}},
+        ]},
+        { nome:'Armaria 07:00 às 19:00', efetivo:[
+          {id:9,  nome:'INSP RODRIGUES', folgas:{4:'FM',6:'FM',8:'FA'}},
+        ]},
+        { nome:'Sentinela', efetivo:[
+          {id:10, nome:'3CL PERBELINI',  folgas:{8:'FM',25:'FM'}},
+        ]},
+        { nome:'Canil 07:00 às 19:00', efetivo:[
+          {id:11, nome:'CD ROBERTO',     folgas:{16:'FM',26:'FM',30:'BH'}},
+          {id:12, nome:'CE EDUARDO',     folgas:{4:'FM',6:'BH',28:'FM'}},
+          {id:13, nome:'3CL MIRANDA',    folgas:{9:'BH',13:'FM',20:'FM'}},
+        ]},
+        { nome:'Ronda Escolar', efetivo:[
+          {id:14, nome:'BERGAMIN',       folgas:{3:'FM',11:'FM',14:'BH'}},
+          {id:15, nome:'CAROLINE',       folgas:{9:'FM',21:'FM',29:'FA'}},
+        ]},
+        { nome:'Maria da Penha', efetivo:[
+          {id:16, nome:'INSP. LILIAN',   folgas:{}},
+          {id:17, nome:'3CL SILVANA',    folgas:{6:'FM',17:'FM',26:'FA'}},
+          {id:18, nome:'3CL MORENO',     folgas:{8:'FM',14:'FM',20:'FA'}},
+        ]},
+        { nome:'COI 06:00 às 18:00', efetivo:[
+          {id:19, nome:'SUBINSP DA SILVA',folgas:{}},
+          {id:20, nome:'CE REINALDO',    folgas:{}},
+          {id:21, nome:'3CL DIEGO',      folgas:{}},
+        ]},
+      ]
+    },
+    {
+      id:'B', nome:'Plantão "B"', horario:'18:00 às 06:00',
+      cor:'#1a5fb4', corTexto:'#ffffff',
+      setores:[
+        { nome:'Operacional', efetivo:[
+          {id:101,nome:'SUBINSP RIBEIRO', folgas:{13:'FM',26:'FM'}},
+          {id:102,nome:'CD HONORIO',      folgas:{12:'FM',20:'FM',28:'FA'}},
+          {id:103,nome:'CD ALEXANDRE',    folgas:{2:'FA',26:'FM',28:'FM'}},
+          {id:104,nome:'CD SALES',        folgas:{10:'FM',18:'FM',31:'FA'}},
+          {id:105,nome:'CE SILVA',        folgas:{9:'FA',12:'FM',14:'FM'}},
+          {id:106,nome:'3CL LIMA',        folgas:{20:'FM',22:'FA'}},
+          {id:107,nome:'3CL MOTA',        folgas:{2:'FM',4:'PA',7:'FM',22:'FA'}},
+          {id:108,nome:'3 CL LEMOS',      folgas:{2:'FM',20:'FM',31:'DIS'}},
+        ]},
+        { nome:'Armaria 19:00 às 07:00', efetivo:[
+          {id:109,nome:'3CL GONÇALVES',   folgas:{22:'FM',24:'FA',27:'FM'}},
+        ]},
+        { nome:'Sentinela', efetivo:[
+          {id:110,nome:'CD JUAREZ',       folgas:{4:'FM',6:'FM',8:'FA'}},
+        ]},
+        { nome:'COI 18:00 às 06:00', efetivo:[
+          {id:111,nome:'INSP PAULO',      folgas:{12:'FM',14:'FM',16:'FA'}},
+          {id:112,nome:'SUBINSP GOMES',   folgas:{5:'FM',11:'FM'}},
+        ]},
+      ]
+    },
+    {
+      id:'C', nome:'Plantão "C"', horario:'06:00 às 18:00',
+      cor:'#2a7a4b', corTexto:'#ffffff',
+      setores:[
+        { nome:'Operacional', efetivo:[
+          {id:201,nome:'MARIANO',         folgas:{17:'FM',19:'FM',23:'DIS'}},
+          {id:202,nome:'CESAR',           folgas:{1:'FM',11:'FM',14:'FA'}},
+          {id:203,nome:'CD ARAUJO',       folgas:{3:'FM',7:'FM',9:'FA'}},
+          {id:204,nome:'CD THIAGO',       folgas:{5:'FM',13:'DIS',27:'FM'}},
+          {id:205,nome:'CE MELO',         folgas:{17:'FM',19:'FM',24:'FA'}},
+          {id:206,nome:'CE DAVID',        folgas:{22:'FA',25:'FM',29:'FM'}},
+          {id:207,nome:'CE MORO',         folgas:{3:'FA',5:'FM',19:'FM'}},
+          {id:208,nome:'3CL VANDERLEI',   folgas:{11:'FM',19:'FM',27:'BH'}},
+          {id:209,nome:'3CL LANDI',       folgas:{27:'FM',30:'FM'}},
+        ]},
+        { nome:'Armaria 07:00 às 19:00', efetivo:[
+          {id:210,nome:'CE ARNALDO',      folgas:{1:'FM',6:'FM',21:'FA'}},
+        ]},
+        { nome:'Sentinela', efetivo:[
+          {id:211,nome:'CE GALINDO',      folgas:{8:'FA',11:'FM',13:'FM'}},
+        ]},
+        { nome:'Canil 07:00 às 19:00', efetivo:[
+          {id:212,nome:'CD ALBERTO',      folgas:{7:'FM',27:'FM',29:'FA'}},
+          {id:213,nome:'CE ANDRE',        folgas:{4:'DIS',11:'FM',13:'FM'}},
+          {id:214,nome:'SOARES',          folgas:{1:'FM',16:'FM',22:'BH'}},
+        ]},
+        { nome:'Ronda Escolar SEG-SEX 10:00-19:00', efetivo:[
+          {id:215,nome:'BERGAMIN',        folgas:{3:'FM',11:'FM',14:'BH'}},
+          {id:216,nome:'CAROLINE',        folgas:{8:'FM',21:'FM',28:'FA'}},
+        ]},
+        { nome:'Maria da Penha', efetivo:[
+          {id:217,nome:'MORENO',          folgas:{8:'FM',13:'FM',20:'FA'}},
+          {id:218,nome:'SILVANA',         folgas:{5:'FM',13:'FM',26:'FA'}},
+        ]},
+        { nome:'COI 06:00 às 18:00', efetivo:[
+          {id:219,nome:'PETRUCIO',        folgas:{}},
+          {id:220,nome:'ALMEIDA',         folgas:{}},
+          {id:221,nome:'DE SOUZA',        folgas:{}},
+        ]},
+      ]
+    },
+    {
+      id:'D', nome:'Plantão "D"', horario:'18:00 às 06:00',
+      cor:'#b34a0a', corTexto:'#ffffff',
+      setores:[
+        { nome:'Operacional', efetivo:[
+          {id:301,nome:'INSP PERES',      folgas:{13:'FM',27:'FM',29:'DIS'}},
+          {id:302,nome:'CD ANTONIO',      folgas:{9:'FA',11:'FM',13:'FM'}},
+          {id:303,nome:'FLORES',          folgas:{1:'FM',3:'FM',15:'DIS',19:'FE',22:'FA'}},
+          {id:304,nome:'SOUZA',           folgas:{24:'FM',27:'FM'}},
+          {id:305,nome:'BACHIEGA',        folgas:{7:'DIS',20:'FM',24:'FM'}},
+          {id:306,nome:'QUIRINO',         folgas:{5:'FM',17:'FM',25:'DIS',27:'DIS'}},
+          {id:307,nome:'ZEFERINO',        folgas:{1:'FA',5:'FM',17:'FM'}},
+          {id:308,nome:'CALEFI',          folgas:{3:'FE',11:'FM',20:'FM'}},
+        ]},
+        { nome:'Armaria 19:00 às 07:00', efetivo:[
+          {id:309,nome:'VALDIR',          folgas:{7:'FM',9:'FA',21:'FM'}},
+        ]},
+        { nome:'Sentinela', efetivo:[
+          {id:310,nome:'INSP PINHEIRO',   folgas:{5:'FM',9:'FM',15:'FE',21:'FA'}},
+        ]},
+        { nome:'COI 18:00 às 06:00', efetivo:[
+          {id:311,nome:'OLIVEIRA',        folgas:{13:'FM',20:'FM',29:'FA'}},
+          {id:312,nome:'CD STOCCHI',      folgas:{7:'FM',11:'FM'}},
+        ]},
+      ]
+    },
+  ]
+};
+
+const TIPOS = ['FM','FA','FE','BH','DIS','PA'];
+const TIPO_DESC = {FM:'Folga Mensal',FA:'Folga Adicional',FE:'Folga Especial',BH:'Banco de Horas',DIS:'Dispensa',PA:'Plantão Adicional'};
+const TIPO_COR  = {FM:'#ef4444',FA:'#3b82f6',FE:'#8b5cf6',BH:'#f59e0b',DIS:'#6b7280',PA:'#ec4899'};
+
+// ── STATE ──────────────────────────────────────────────────────
+let db;
+let selectedPlantao = 'A';
+let modalFolgaState = {};
+let modalMembroState = {};
+
+const now = new Date();
+const MES = now.getMonth()+1;
+const ANO = now.getFullYear();
+const DIAS_MES = new Date(ANO, MES, 0).getDate();
+const DIAS = Array.from({length: DIAS_MES}, (_,i) => i+1);
+
+function loadDB() {
+  try {
+    const s = localStorage.getItem('plantao_db_v2');
+    db = s ? JSON.parse(s) : JSON.parse(JSON.stringify(INITIAL_DATA));
+  } catch { db = JSON.parse(JSON.stringify(INITIAL_DATA)); }
+}
+function saveDB() { localStorage.setItem('plantao_db_v2', JSON.stringify(db)); }
+function resetData() {
+  if(!confirm('Restaurar todos os dados originais?')) return;
+  db = JSON.parse(JSON.stringify(INITIAL_DATA));
+  saveDB(); renderAll();
+}
+
+// ── VIEWS ──────────────────────────────────────────────────────
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if(id==='dashboard') renderDash();
+  if(id==='escala') renderEscala();
+  if(id==='busca') renderBusca();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────
+function renderDash() {
+  document.getElementById('dash-sub').textContent = `Visão geral — ${MES}/${ANO}`;
+  let totalM=0, totalF=0;
+  const porTipo = {};
+  TIPOS.forEach(t=>porTipo[t]=0);
+  db.plantoes.forEach(p=>p.setores.forEach(s=>{
+    totalM+=s.efetivo.length;
+    s.efetivo.forEach(m=>Object.values(m.folgas).forEach(f=>{totalF++;if(porTipo[f]!==undefined)porTipo[f]++;}));
+  }));
+
+  document.getElementById('stat-grid').innerHTML = [
+    {icon:'👥',val:totalM,label:'Total de Membros',cor:'#4f7af8'},
+    {icon:'📅',val:totalF,label:'Total de Folgas',cor:'#a855f7'},
+    {icon:'🛡️',val:4,label:'Plantões Ativos',cor:'#22c55e'},
+    {icon:'📆',val:DIAS_MES,label:'Dias no Mês',cor:'#f59e0b'},
+  ].map(s=>`
+    <div class="card stat-card">
+      <div class="stat-icon">${s.icon}</div>
+      <div>
+        <div class="stat-val" style="color:${s.cor}">${s.val}</div>
+        <div class="stat-label">${s.label}</div>
+      </div>
+    </div>`).join('');
+
+  // Tipos
+  document.getElementById('dash-tipos').innerHTML = `
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;color:#fff;margin-bottom:16px">📊 Folgas por Tipo</div>
+    ${TIPOS.map(t=>`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span class="tag" style="background:${TIPO_COR[t]};color:#fff;min-width:38px;text-align:center">${t}</span>
+        <span style="flex:1;font-size:13px;color:var(--text2)">${TIPO_DESC[t]}</span>
+        <div class="chart-bar" style="width:${Math.max(4,(porTipo[t]/(totalF||1))*100)}px;background:${TIPO_COR[t]}"></div>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;color:#fff;min-width:22px;text-align:right">${porTipo[t]}</span>
+      </div>`).join('')}`;
+
+  // Plantões
+  document.getElementById('dash-plantoes').innerHTML = `
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;color:#fff;margin-bottom:16px">🛡️ Resumo por Plantão</div>
+    ${db.plantoes.map(p=>{
+      const tm = p.setores.reduce((a,s)=>a+s.efetivo.length,0);
+      const tf = p.setores.reduce((a,s)=>a+s.efetivo.reduce((b,m)=>b+Object.keys(m.folgas).length,0),0);
+      return `<div class="plantao-row">
+        <div class="plantao-badge-sm" style="background:${p.cor};color:${p.corTexto}">${p.id}</div>
+        <div style="flex:1">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#fff">${p.nome}</div>
+          <div style="font-size:12px;color:var(--text2)">${p.horario}</div>
+        </div>
+        <div style="text-align:right;margin-right:10px">
+          <div class="num-big" style="color:#4f7af8">${tm}</div>
+          <div style="font-size:11px;color:var(--text2)">membros</div>
+        </div>
+        <div style="text-align:right">
+          <div class="num-big" style="color:#f59e0b">${tf}</div>
+          <div style="font-size:11px;color:var(--text2)">folgas</div>
+        </div>
+      </div>`;
+    }).join('')}`;
+
+  // Legenda
+  document.getElementById('dash-legenda').innerHTML = `
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;color:#fff;margin-bottom:16px">📌 Legenda</div>
+    <div class="legenda-grid">
+      ${TIPOS.map(t=>`
+        <div class="legenda-item">
+          <span class="tag" style="background:${TIPO_COR[t]};color:#fff">${t}</span>
+          <span style="font-size:12px;color:var(--text2)">${TIPO_DESC[t]}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ── ESCALA ────────────────────────────────────────────────────
+function renderEscala() {
+  // Tabs
+  document.getElementById('ptabs').innerHTML = db.plantoes.map(p=>`
+    <button class="ptab" style="background:${selectedPlantao===p.id?p.cor:'var(--bg3)'};color:${selectedPlantao===p.id?p.corTexto:'var(--text2)'};border-color:${selectedPlantao===p.id?p.cor:'var(--border)'}"
+      onclick="selectPlantao('${p.id}')">
+      ${p.id} &mdash; ${p.horario}
+    </button>`).join('');
+
+  const p = db.plantoes.find(x=>x.id===selectedPlantao);
+  if(!p){document.getElementById('escala-content').innerHTML='';return;}
+
+  let html = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px">
+      <div style="width:46px;height:46px;background:${p.cor};color:${p.corTexto};border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:24px">${p.id}</div>
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:26px;color:#fff">Operacional ${p.nome}</div>
+        <div style="font-size:13px;color:var(--text2)">🕐 ${p.horario} &nbsp;•&nbsp; ${MES}/${ANO}</div>
+      </div>
+    </div>`;
+
+  p.setores.forEach((setor, si)=>{
+    html += `
+      <div class="setor-block">
+        <div class="setor-head">
+          <div class="setor-label" style="background:${p.cor}22;color:${p.cor};border-color:${p.cor}">${setor.nome}</div>
+          <button class="btn-add-member" onclick="openModalMembro('add','${p.id}',${si})">+ Membro</button>
+        </div>
+        <div class="tscroll">
+          <table>
+            <thead><tr>
+              <th class="nome-col">NOME</th>
+              ${DIAS.map(d=>`<th style="min-width:30px">${d}</th>`).join('')}
+              <th class="acoes-col">AÇÕES</th>
+            </tr></thead>
+            <tbody>`;
+
+    if(setor.efetivo.length===0){
+      html+=`<tr class="empty-row"><td colspan="${DIAS_MES+2}">Nenhum membro. Clique em "+ Membro".</td></tr>`;
+    }
+
+    setor.efetivo.forEach(m=>{
+      html+=`<tr>
+        <td class="nome-td">${m.nome}</td>
+        ${DIAS.map(d=>{
+          const t = m.folgas[String(d)];
+          const cls = t ? `has-folga ${t.toLowerCase()}` : '';
+          const bg  = t ? `style="background:${TIPO_COR[t]}"` : '';
+          return `<td class="day-td"><span class="fcell ${cls}" ${bg} onclick="openModalFolga('${p.id}',${si},${m.id},${d},'${t||''}')">${t||'·'}</span></td>`;
+        }).join('')}
+        <td class="acoes-td">
+          <button class="btn-edit" onclick="openModalMembro('edit','${p.id}',${si},${m.id},'${m.nome.replace(/'/g,"\\'")}')">✏️</button>
+          <button class="btn-del"  onclick="excluirMembro('${p.id}',${si},${m.id})">🗑️</button>
+        </td>
+      </tr>`;
+    });
+
+    html+=`</tbody></table></div></div>`;
+  });
+
+  document.getElementById('escala-content').innerHTML = html;
+}
+
+function selectPlantao(id){selectedPlantao=id;renderEscala();}
+
+// ── MODAL FOLGA ───────────────────────────────────────────────
+function openModalFolga(plantaoId, setorIdx, membroId, dia, tipoAtual){
+  const p = db.plantoes.find(x=>x.id===plantaoId);
+  const m = p.setores[setorIdx].efetivo.find(x=>x.id===membroId);
+  modalFolgaState = {plantaoId, setorIdx, membroId, dia, tipo: tipoAtual||null};
+  document.getElementById('mf-title').textContent = 'Gerenciar Folga';
+  document.getElementById('mf-sub').textContent = `${m.nome} — Dia ${dia}`;
+  document.getElementById('mf-del-btn').style.display = tipoAtual ? 'block' : 'none';
+
+  document.getElementById('mf-grid').innerHTML = TIPOS.map(t=>`
+    <div class="folga-opt ${modalFolgaState.tipo===t?'selected':''}" style="background:${TIPO_COR[t]}33;border-color:${modalFolgaState.tipo===t?TIPO_COR[t]:'var(--border2)'}"
+      onclick="selectFolgaTipo('${t}')">
+      <span class="sigla">${t}</span>
+      <span class="desc">${TIPO_DESC[t]}</span>
+    </div>`).join('');
+
+  openModal('modal-folga');
+}
+
+function selectFolgaTipo(t){
+  modalFolgaState.tipo = modalFolgaState.tipo===t ? null : t;
+  document.querySelectorAll('.folga-opt').forEach((el,i)=>{
+    const tt = TIPOS[i];
+    el.classList.toggle('selected', modalFolgaState.tipo===tt);
+    el.style.borderColor = modalFolgaState.tipo===tt ? TIPO_COR[tt] : 'var(--border2)';
+  });
+}
+
+function salvarFolga(){
+  const {plantaoId,setorIdx,membroId,dia,tipo} = modalFolgaState;
+  const p = db.plantoes.find(x=>x.id===plantaoId);
+  const m = p.setores[setorIdx].efetivo.find(x=>x.id===membroId);
+  if(tipo) m.folgas[String(dia)] = tipo;
+  else delete m.folgas[String(dia)];
+  saveDB(); closeModal('modal-folga'); renderEscala();
+}
+
+function removerFolga(){
+  const {plantaoId,setorIdx,membroId,dia} = modalFolgaState;
+  const p = db.plantoes.find(x=>x.id===plantaoId);
+  const m = p.setores[setorIdx].efetivo.find(x=>x.id===membroId);
+  delete m.folgas[String(dia)];
+  saveDB(); closeModal('modal-folga'); renderEscala();
+}
+
+// ── MODAL MEMBRO ──────────────────────────────────────────────
+function openModalMembro(mode, plantaoId, setorIdx, membroId=null, nomeAtual=''){
+  modalMembroState = {mode, plantaoId, setorIdx, membroId};
+  document.getElementById('mm-title').textContent = mode==='add' ? '➕ Adicionar Membro' : '✏️ Editar Membro';
+  document.getElementById('mm-sub').textContent = mode==='add' ? 'Novo integrante do setor' : `Editando: ${nomeAtual}`;
+  document.getElementById('mm-nome').value = nomeAtual;
+  openModal('modal-membro');
+  setTimeout(()=>document.getElementById('mm-nome').focus(),100);
+}
+
+function salvarMembro(){
+  const nome = document.getElementById('mm-nome').value.trim();
+  if(!nome) return;
+  const {mode, plantaoId, setorIdx, membroId} = modalMembroState;
+  const p = db.plantoes.find(x=>x.id===plantaoId);
+  const s = p.setores[setorIdx];
+  if(mode==='add'){
+    s.efetivo.push({id: Date.now(), nome, folgas:{}});
+  } else {
+    const m = s.efetivo.find(x=>x.id===membroId);
+    if(m) m.nome = nome;
+  }
+  saveDB(); closeModal('modal-membro'); renderEscala();
+}
+
+function excluirMembro(plantaoId, setorIdx, membroId){
+  if(!confirm('Excluir este membro?')) return;
+  const p = db.plantoes.find(x=>x.id===plantaoId);
+  p.setores[setorIdx].efetivo = p.setores[setorIdx].efetivo.filter(m=>m.id!==membroId);
+  saveDB(); renderEscala();
+}
+
+// ── BUSCA ─────────────────────────────────────────────────────
+function renderBusca(){
+  const nome = document.getElementById('busca-nome').value.trim().toLowerCase();
+  const tipo = document.getElementById('busca-tipo').value;
+  const el = document.getElementById('busca-results');
+
+  if(!nome && !tipo){
+    el.innerHTML = `<div class="card" style="padding:40px;text-align:center;color:var(--text3)">
+      <div style="font-size:40px;margin-bottom:10px">🔍</div>
+      <div>Digite um nome ou selecione um tipo de folga.</div>
+    </div>`;
+    return;
+  }
+
+  let results = [];
+  db.plantoes.forEach(p=>{
+    p.setores.forEach((s,si)=>{
+      s.efetivo.forEach(m=>{
+        if(nome && !m.nome.toLowerCase().includes(nome)) return;
+        const folgas = tipo
+          ? Object.entries(m.folgas).filter(([,v])=>v===tipo)
+          : Object.entries(m.folgas);
+        if(nome || folgas.length>0)
+          results.push({p,s,si,m,folgas});
+      });
+    });
+  });
+
+  if(results.length===0){
+    el.innerHTML=`<div class="card" style="padding:32px;text-align:center;color:var(--text2)">Nenhum resultado encontrado.</div>`;
+    return;
+  }
+
+  el.innerHTML = results.map(({p,s,m,folgas})=>`
+    <div class="card result-card">
+      <div class="result-plantao-badge" style="background:${p.cor};color:${p.corTexto}">${p.id}</div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:#fff">${m.nome}</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">${p.nome} — ${s.nome}</div>
+        <div class="folga-pills">
+          ${folgas.length===0
+            ? `<span style="color:var(--text3);font-size:12px">Sem folgas registradas</span>`
+            : folgas.map(([dia,t])=>`
+                <span class="folga-pill">
+                  <span>Dia ${dia}:</span>
+                  <span class="tag" style="background:${TIPO_COR[t]};color:#fff">${t}</span>
+                </span>`).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── MODAL HELPERS ─────────────────────────────────────────────
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-bg').forEach(bg=>{
+  bg.addEventListener('click', e=>{ if(e.target===bg) bg.classList.remove('open'); });
+});
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open'));
+});
+
+// ── INIT ──────────────────────────────────────────────────────
+function renderAll(){
+  renderDash();
+  renderEscala();
+  renderBusca();
+}
+
+loadDB();
+renderAll();
+</script>
+</body>
+</html>
